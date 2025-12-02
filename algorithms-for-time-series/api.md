@@ -839,3 +839,320 @@ int main() {
 }
 
 ```
+
+***
+
+## Critical Value
+
+### Type Aliases
+
+```cpp
+typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
+typedef Kernel::Point_2 Point_2;
+```
+
+* `Kernel` &#x20;
+  * CGAL kernel used for geometric computations.
+* `Point_2` &#x20;
+  * 2D point type from the kernel, representing points on the curves.
+
+***
+
+### Class Definition
+
+```cpp
+
+class CriticalValue {
+ public:
+  CriticalValue(const PolygonalCurve& P, const PolygonalCurve& Q);
+  ~CriticalValue();
+
+  void computeTypeA();
+  void computeTypeB();
+  void computeTypeC();
+  void computeAndSortAllTypes();
+
+  const std::vector<double>& getTypeAValues() const;
+  const std::vector<double>& getTypeBValues() const;
+  const std::vector<double>& getTypeCValues() const;
+  const std::vector<double>& getCriticalValues() const;
+
+ private:
+  PolygonalCurve P;
+  PolygonalCurve Q;
+
+  std::vector<double> typeAValues;
+  std::vector<double> typeBValues;
+  std::vector<double> typeCValues;
+  std::vector<double> critical_values;
+
+  double distance(const Point_2& p1, const Point_2& p2) const;
+  double closestPointOnEdge(const Point_2& p, const Point_2& start,
+                            const Point_2& end) const;
+  Point_2 findIntersectionWithPerpendicularBisector(const Point_2& p1,
+                                                    const Point_2& p2,
+                                                    const Point_2& start,
+                                                    const Point_2& end) const;
+};
+
+```
+
+***
+
+### Member Variables
+
+#### `PolygonalCurve P`
+
+* **Description** &#x20;
+  * Copy of the first polygonal curve. It is treated as one of the two curves whose Fréchet distance is to be analyzed.
+
+#### `PolygonalCurve Q`
+
+* **Description** &#x20;
+  * Copy of the second polygonal curve.
+
+#### `std::vector<double> typeAValues`
+
+* **Description** &#x20;
+  * Stores all distances of **Type A** (endpoints of the curves). &#x20;
+  * After a fresh call to `computeTypeA()` in a clean object, this vector has exactly two entries.
+
+#### `std::vector<double> typeBValues`
+
+* **Description** &#x20;
+  * Stores all distances of **Type B** (vertex-to-edge distances between `P` and `Q` in both directions).
+
+#### `std::vector<double> typeCValues`
+
+* **Description** &#x20;
+  * Stores all distances of **Type C** (distances from vertices to bisector–edge intersection points).
+
+#### `std::vector<double> critical_values`
+
+* **Description** &#x20;
+  * Combined list of all critical values from types A, B, and C, after sorting in non-decreasing order and removing duplicates. &#x20;
+  * This is the main output to be used by higher-level search algorithms.
+
+***
+
+### Constructor
+
+#### `CriticalValue(const PolygonalCurve& P, const PolygonalCurve& Q)`
+
+* **Input:**
+  * `P`: first polygonal curve.
+  * `Q`: second polygonal curve.
+* **Output:** &#x20;
+  * None (constructs the object).
+* **Complexity:** &#x20;
+  * Time: dominated by `computeAndSortAllTypes()`. &#x20;
+    * For `p = P.numPoints()` and `q = Q.numPoints()` this is:
+      * $$\Theta(p^2 (q-1) + q^2 (p-1)) + O(N \log N)$$,
+    * where `N` is the final size of `critical_values`.
+  * Space: $$O(N)$$ to store all distances.
+* **Description:** &#x20;
+  * Copies the input curves, then immediately computes all Type A/B/C distances and merges them into a sorted, deduplicated vector of critical values.
+* **Example:**
+  * ```cpp
+    PolygonalCurve P(pointsP);
+    PolygonalCurve Q(pointsQ);
+
+    CriticalValue cv(P, Q);
+    std::cout << "Number of critical values: "
+              << cv.getCriticalValues().size() << "\\n";
+    ```
+
+***
+
+### Member Functions (Public)
+
+#### `void computeTypeA()`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * Appends Type A distances to `typeAValues`.
+* **Complexity:** $$O(1)$$
+* **Description:** &#x20;
+  * Computes the distances:
+    * between the first vertices of `P` and `Q`,
+    * between the last vertices of `P` and `Q`, &#x20;
+
+&#x20;             and appends them to `typeAValues`. The function does **not** clear the vector before appending.
+
+#### `void computeTypeB()`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * Appends Type B distances to `typeBValues`.
+* **Complexity:** $$Θ(p·q)$$, where `p = P.numPoints()` and `q = Q.numPoints()`.
+* **Description:**&#x20;
+  * For every vertex of one curve, finds the closest point on each edge of the other curve and appends that distance to `typeBValues`:&#x20;
+    * For each vertex of `P`, and for each edge of `Q`,
+    * For each vertex of `Q`, and for each edge of `P`.
+  * The closest point on an edge is computed via projection onto the segment.
+
+#### `void computeTypeC()`
+
+* **Input:**&#x20;
+  * None.
+* **Output:** &#x20;
+  * Appends Type C distances to `typeCValues`.
+* **Complexity:** $$Θ(p²·(q−1) + q²·(p−1))$$
+* **Description:** &#x20;
+  * Enumerates all ordered pairs of distinct vertices on one curve and all edges on the other curve:
+    * For pairs of vertices on `P` and edges of `Q`,
+    * For pairs of vertices on `Q` and edges of `P`.
+  * For each triple, it:
+    * Uses `findIntersectionWithPerpendicularBisector` to find the point on the edge that lies on the perpendicular bisector of the vertex pair.
+    * Skips the triple if no such point lies on the edge.
+    * Otherwise, computes the distance from one of the vertices to this intersection point and appends it to `typeCValues`.
+
+#### `void computeAndSortAllTypes()`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * Fills `critical_values` with all Type A/B/C distances, sorted and deduplicated.
+* **Complexity:** cost of `computeTypeA/B/C()` plus sorting and deduplication:
+  * $$\Theta(p^2 (q-1) + q^2 (p-1)) + O(N \log N)$$.
+*   **Description:** &#x20;
+
+    * Calls `computeTypeA()`, `computeTypeB()`, and `computeTypeC()` to populate the three type-specific vectors.
+    * Concatenates all distances into `critical_values`.
+    * Sorts `critical_values` in ascending order.
+    * Removes duplicates using `std::unique` and `erase`.
+
+    The method does not clear `typeAValues`, `typeBValues`, or `typeCValues`, so multiple invocations will accumulate data unless the caller clears the vectors manually.
+
+#### `const std::vector<double>& getTypeAValues() const`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * Const reference to the list of Type A distances.
+* **Complexity:** $$O(1)$$
+* **Description:** &#x20;
+  * Provides read-only access to `typeAValues`. &#x20;
+  * Intended mainly for debugging and analysis; higher-level algorithms typically use `getCriticalValues()` instead.
+
+#### `const std::vector<double>& getTypeBValues() const`
+
+* **Input:**&#x20;
+  * None.
+* **Output:** &#x20;
+  * Const reference to the list of Type B distances.
+* **Complexity:** $$O(1)$$
+* **Description:** &#x20;
+  * Provides read-only access to `typeBValues`.
+
+#### `const std::vector<double>& getTypeCValues() const`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * Const reference to the list of Type C distances.
+* **Complexity:** $$O(1)$$
+* **Description:**&#x20;
+  * Provides read-only access to `typeCValues`.
+
+#### `const std::vector<double>& getCriticalValues() const`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * Const reference to the sorted, deduplicated list of all critical values.
+* **Complexity:** $$O(1)$$
+* **Description:**&#x20;
+  * Returns the primary output of the `CriticalValue` class.&#x20;
+  * This sequence is suitable for binary search or parametric search to find the exact Fréchet distance.
+
+***
+
+### Member Functions (Private)
+
+#### `double distance(const Point_2& p1, const Point_2& p2) const`
+
+* **Input:**
+  * `p1`, `p2`: two points in the plane.
+* **Output:**&#x20;
+  * Euclidean distance $$\|p1 - p2\|$$.
+* **Complexity:** $$O(1)$$
+* **Description:** &#x20;
+  * Wraps `CGAL::squared_distance` and `std::sqrt` to compute Euclidean distance with reasonable numerical robustness.
+
+#### `double closestPointOnEdge(const Point_2& p, const Point_2& start, const Point_2& end) const`
+
+* **Input:**
+  * `p`: query point.
+  * `start`, `end`: endpoints of the segment.
+* **Output:** &#x20;
+  * Distance from `p` to the closest point on the segment `[start, end]`.
+* **Complexity:** $$O(1)$$
+* **Description:**&#x20;
+  * Projects `p` onto the supporting line of the segment and clamps the parameter to $$[0, 1]$$to obtain the closest point on the finite segment. &#x20;
+  * Handles degenerate segments (where `start == end`) by returning the distance from `p` to `start`.
+
+#### `Point_2 findIntersectionWithPerpendicularBisector(const Point_2& p1, const Point_2& p2, const Point_2& start, const Point_2& end) const`
+
+* **Input:**
+  * `p1`, `p2`: two distinct vertices whose perpendicular bisector is considered.
+  * `start`, `end`: endpoints of an edge on the other curve.
+* **Output:** &#x20;
+  * A point on the segment `[start, end]` that lies on the perpendicular bisector of `p1` and `p2`, or the sentinel point `(-1, -1)` if no such point exists on the edge.
+* **Complexity:** $$O(1)$$
+* **Description:** &#x20;
+  * Works in the parameter space along vector $$p_1 p_2$$:
+    * Projects `start` and `end` onto vector $$p_1 p_2$$ to obtain scalar parameters `a` and `b`.
+    * If the interval `[a, b]` does not contain `0.5`, no intersection lies on the segment.
+    * Handles special cases where one or both projections equal `0.5` exactly, returning the corresponding endpoint or the closer one to `p1`.
+    * Otherwise, interpolates along the edge `[start, end]` with ratio `(0.5 - a) : (b - 0.5)` to find the intersection point.
+  * This function is used in `computeTypeC()` to identify points on edges where distances to `p1` and `p2` coincide.
+
+***
+
+### End-to-End Example
+
+```cpp
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+
+#include "polygonal_curve.h"
+#include "critical_value.h"
+
+#include <iostream>
+#include <vector>
+
+using Kernel  = CGAL::Exact_predicates_inexact_constructions_kernel;
+using Point_2 = Kernel::Point_2;
+
+int main() {
+  std::vector<Point_2> P_points = {
+      Point_2(0.0, 0.0),
+      Point_2(1.0, 0.0),
+      Point_2(2.0, 1.0)
+  };
+
+  std::vector<Point_2> Q_points = {
+      Point_2(0.0, 0.0),
+      Point_2(0.0, 1.0),
+      Point_2(1.0, 2.0)
+  };
+
+  PolygonalCurve P(P_points);
+  PolygonalCurve Q(Q_points);
+  
+  CriticalValue cv(P, Q);
+
+  std::cout << "Total critical values: "
+            << cv.getCriticalValues().size() << "\\n";
+
+  const auto& vals = cv.getCriticalValues();
+  for (double d : vals) {
+    std::cout << d << "\\n";
+  }
+
+  return 0;
+}
+
+```
