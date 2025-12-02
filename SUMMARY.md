@@ -18,8 +18,7 @@
 * [Algorithms](algorithms-for-time-series/algorithms/README.md)
   * [Fréchet Distance](algorithms-for-time-series/algorithms/frechet-distance.md)
   * [Geometric Edit Distance](algorithms-for-time-series/algorithms/geometric-edit-distance.md)
-* [API](algorithms-for-time-series/api/README.md)
-  * [Free Space](algorithms-for-time-series/api/free-space.md)
+* [API](algorithms-for-time-series/api.md)
 
 ***
 
