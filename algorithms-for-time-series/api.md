@@ -1334,3 +1334,194 @@ int main() {
 }
 
 ```
+
+***
+
+## Geometric Edit Distance
+
+### Type Aliases
+
+#### `CurveAlphabet`
+
+* **Description** &#x20;
+  * Symbol representing a grid cell after random shift and scaling. &#x20;
+  * The first component is the floored x-coordinate, the second is the floored y-coordinate.
+
+#### `CurveString`
+
+* **Description** &#x20;
+  * Sequence of `CurveAlphabet` symbols encoding a polygonal curve as a string.
+
+#### `CurveStringPair`
+
+* **Description** &#x20;
+  * Holds the pair of encoded strings corresponding to two input curves.
+
+#### `Matching`
+
+* **Description** &#x20;
+  * Monotone matching as a list of index pairs $$(i,j)$$, where `i` indexes into the first curve/string and `j` into the second.
+
+***
+
+### Function
+
+#### `double computeSquareRootApproxGED(const PolygonalCurve& P, const PolygonalCurve& Q)`
+
+* **Input:**
+  * `P`: first polygonal curve.
+  * `Q`: second polygonal curve.
+* **Output:** &#x20;
+  * An $$O(\sqrt{n})$$-approximation of $$\mathrm{GED}(P, Q)$$, where $$n = \min(P.\text{numPoints}(), Q.\text{numPoints}())$$.
+* **Complexity:** &#x20;
+  * Current implementation: $$O(n^2)$$ time, $$O(n^2)$$ space (dominated by repeated SED calls and DP tables).
+* **Description:** &#x20;
+  * Implements the randomized $$O(\sqrt{n})$$-approximation algorithm:
+    * If the sum of Euclidean distances between corresponding points is ≤ 1, use the diagonal matching and return its cost.
+    * Otherwise, for geometrically increasing grid parameters `g` and multiple random shifts:
+      * Call `transformCurvesToStrings` to encode the curves as strings.
+      * Run `SED` with threshold `12*sqrt(n) + 2*g`.
+      * If `SED` returns a non-empty matching, compute and return its GED cost via `computeCost`.
+    * If no matching is found, return the cost of the empty matching.
+  * Because of randomization, calling this function multiple times may yield slightly different results, but the theoretical approximation guarantee remains.
+* **Example:** &#x20;
+  * See the “Example Usage” section above.
+
+***
+
+### Helper Functions
+
+#### `double computeCost(const PolygonalCurve& P, const PolygonalCurve& Q, const Matching& matching)`
+
+* **Input:**
+  * `P`, `Q`: input polygonal curves.
+  * `matching`: monotone matching (index pairs) between `P` and `Q`. &#x20;
+    * It may be empty, in which case all points are treated as unmatched.
+* **Output:** &#x20;
+  * GED cost for `matching` using the library’s cost model.
+* **Complexity:** &#x20;
+* $$O(|M| + m + n)$$, where:
+  * $$|M|$$is the size of `matching`,
+  * `m = P.numPoints()`, `n = Q.numPoints()`.
+* **Description:** &#x20;
+  * Computes the cost $$\delta(M) = \sum_{(i,j)\in M} |p_i - q_j|_2 + \left( m - |M| \right) + \left( n - |M| \right)$$, where the last two terms count unmatched points in `P` and `Q`. &#x20;
+    * This is the cost function minimized in the definition of GED.
+
+#### `CurveStringPair transformCurvesToStrings(const PolygonalCurve& P, const PolygonalCurve& Q, int g)`
+
+* **Input:**
+  * `P`, `Q`: input curves.
+  * `g`: grid parameter controlling cell size and the approximation level.
+* **Output:** &#x20;
+  * Pair of strings `(stringP, stringQ)` encoding `P` and `Q` as sequences of grid-cell symbols.
+* **Complexity:** &#x20;
+  * $$O(n)$$ in the number of points (assumes `P` and `Q` have comparable length).
+*   **Description:** &#x20;
+
+    * Set $$n = \min(P.\text{numPoints}(), Q.\text{numPoints}())$$and $$\delta = g / \sqrt{n}$$.
+    * Sample random shift $$(x_0, y_0) \in [0,\delta]^2$$.
+    * Copy curves `P` and `Q` into `convertedP` and `convertedQ`.
+    * Shift both curves by $$(-x_0, -y_0)$$ using `PolygonalCurve::shiftOrigin`.
+    * Scale coordinates by `1/δ` via `PolygonalCurve::scaleGrid(delta)`.
+    * Apply `PolygonalCurve::floorCoordinates` to snap points to integer grid.
+    * For each point, create a `CurveAlphabet` symbol `(floor(x), floor(y))` and append to the corresponding `CurveString`.
+
+
+
+    * The resulting strings provide a discretized, translation-invariant representation of the curves suitable for string edit distance computation.
+
+#### `Matching SED(const CurveString& S, const CurveString& T, double threshold)`
+
+* **Input:**
+  * `S`, `T`: encoded curve strings.
+  * `threshold`: maximum allowed edit distance.
+* **Output:** &#x20;
+  * If the string edit distance between `S` and `T` is **≤ threshold**, returns a `Matching` recovered via `backtrace`. &#x20;
+  * Otherwise, returns an **empty** matching.
+* **Complexity:** &#x20;
+  * Worst case $$O(n^2)$$ time and $$O(n^2)$$ space for `n = max(|S|, |T|)`.
+*   **Description:** &#x20;
+
+    * Allocates a DP table `D` of size `(n+1) × (m+1)` and initializes first row/column with insertion/deletion costs.
+    * Maintains an auxiliary array `L` of length `2k+3` (where `k = floor(threshold)`) to represent the furthest-reaching positions along each diagonal within the band.
+    * For each edit distance `e = 0..k` and each diagonal `h` with `|h| ≤ e` and `h ≡ e (mod 2)`:
+      * Computes a candidate position `r` from neighboring `L` values.
+      * Slides along the diagonal while symbols match, updating `D`.
+      * Updates `L[h]` with the new furthest-reaching `r`, or sets it to “infinity” (max int) if out of range.
+    * If `D[n][m]` is left at `-1`, the edit distance exceeds `threshold` → return empty matching.
+    * Otherwise, call `backtrace(D)` to reconstruct the matching.
+
+
+
+    * This function implements a banded dynamic programming SED tailored to the approximated GED setting.
+
+#### `Matching backtrace(const std::vector<std::vector<int>>& D)`
+
+* **Input:**
+  * `D`: DP table filled by `SED`. Only the relative values matter; the function assumes that:
+    * `D[i][j]` is non-negative for reachable states,
+    * `D[n][m]` encodes a finite edit distance.
+* **Output:** &#x20;
+  * A `Matching` consisting of index pairs `(i, j)` corresponding to diagonal moves in the DP table.
+* **Complexity:** &#x20;
+  * $$O(m + n)$$, where `m = D.size() - 1` and `n = D[0].size() - 1`.
+* **Description:** &#x20;
+  * Starting from `(x, y) = (n, m)`, repeatedly:
+    * If moving diagonally `(x-1, y-1)` keeps the same edit distance, interpret this as a **match** and append `(x-1, y-1)` to the matching.
+    * Otherwise, move left `(x, y-1)` (skip a symbol in `T`) or up `(x-1, y)` (skip a symbol in `S`) depending on which preserves `D`’s consistency.
+  * The resulting list of pairs is a **monotone matching** in reverse order; the caller may reverse the vector if needed for forward iteration.
+
+***
+
+### End-to-End Example
+
+```cpp
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+
+#include "polygonal_curve.h"
+#include "ged.h"
+
+#include <iostream>
+#include <vector>
+
+using Kernel  = CGAL::Exact_predicates_inexact_constructions_kernel;
+using Point_2 = Kernel::Point_2;
+
+int main() {
+  std::vector<Point_2> P_points = {
+      Point_2(0.0, 0.0),
+      Point_2(1.0, 0.2),
+      Point_2(2.0, 0.4),
+      Point_2(3.0, 0.6)
+  };
+
+  std::vector<Point_2> Q_points = {
+      Point_2(0.1, 0.0),
+      Point_2(0.9, 0.3),
+      Point_2(2.1, 0.5),
+      Point_2(3.1, 0.7)
+  };
+  
+  PolygonalCurve P(P_points);
+  PolygonalCurve Q(Q_points);
+
+  // Main entry point: approximate geometric edit distance
+  double gedValue = GED::computeSquareRootApproxGED(P, Q);
+  std::cout << "Approximate GED(P, Q) = " << gedValue << std::endl;
+
+  // (Optional) directly use helpers:
+  // 1. Encode as strings with some grid parameter g
+  int g = 4;
+  GED::CurveStringPair strings = GED::transformCurvesToStrings(P, Q, g);
+
+  // 2. Run SED with a threshold and inspect the matching
+  double threshold = 12.0 * std::sqrt(static_cast<double>(
+                        std::min(P.numPoints(), Q.numPoints())))
+                     + 2.0 * g;
+  GED::Matching M = GED::SED(strings.first, strings.second, threshold);
+  std::cout << "Matching size from SED: " << M.size() << std::endl;
+
+  return 0;
+}
+
+```
