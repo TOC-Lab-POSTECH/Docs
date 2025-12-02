@@ -10,7 +10,10 @@ It takes:
 
 * a polygonal curve `P`,
 * a polygonal curve `Q`, and
-* an `epsilon` value, and computes the free intervals along:
+* an `epsilon` value,&#x20;
+
+and computes the free intervals along:
+
 * the **vertical boundaries** (stored in `L`), associated with segments of `P` against vertices of `Q`
 * the **horizontal boundaries** (stored in `B`), associated with segments of `Q` against vertices of `P`.
 
