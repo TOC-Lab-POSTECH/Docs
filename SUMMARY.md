@@ -16,6 +16,7 @@
   * [Polygonal Curve](algorithms-for-time-series/data-structures/polygonal-curve.md)
   * [Free Space](algorithms-for-time-series/data-structures/free-space.md)
   * [Decision Problem](algorithms-for-time-series/data-structures/decision-problem.md)
+  * [Critical Value](algorithms-for-time-series/data-structures/critical-value.md)
 * [Algorithms](algorithms-for-time-series/algorithms/README.md)
   * [Fréchet Distance](algorithms-for-time-series/algorithms/frechet-distance.md)
   * [Geometric Edit Distance](algorithms-for-time-series/algorithms/geometric-edit-distance.md)
