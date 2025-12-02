@@ -14,6 +14,7 @@
 * [Introduction](algorithms-for-time-series/introduction.md)
 * [Data Structures](algorithms-for-time-series/data-structures/README.md)
   * [Polygonal Curve](algorithms-for-time-series/data-structures/polygonal-curve.md)
+  * [Free Space](algorithms-for-time-series/data-structures/free-space.md)
 * [Algorithms](algorithms-for-time-series/algorithms/README.md)
   * [Fréchet Distance](algorithms-for-time-series/algorithms/frechet-distance.md)
   * [Geometric Edit Distance](algorithms-for-time-series/algorithms/geometric-edit-distance.md)
