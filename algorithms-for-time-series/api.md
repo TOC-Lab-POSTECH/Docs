@@ -851,17 +851,7 @@ typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
 typedef Kernel::Point_2 Point_2;
 ```
 
-* `Kernel` &#x20;
-  * CGAL kernel used for geometric computations.
-* `Point_2` &#x20;
-  * 2D point type from the kernel, representing points on the curves.
-
-***
-
-### Class Definition
-
 ```cpp
-
 class CriticalValue {
  public:
   CriticalValue(const PolygonalCurve& P, const PolygonalCurve& Q);
@@ -1150,6 +1140,194 @@ int main() {
   const auto& vals = cv.getCriticalValues();
   for (double d : vals) {
     std::cout << d << "\\n";
+  }
+
+  return 0;
+}
+
+```
+
+***
+
+## Fréchet distance
+
+### Type Aliases
+
+```cpp
+class FDistance {
+ public:
+  // Constructor to initialize with two polygonal curves
+  FDistance(const PolygonalCurve& P, const PolygonalCurve& Q);
+
+  // Getter
+  double getFDistance() const;
+
+ private:
+  PolygonalCurve P;           // Polygonal curve P
+  PolygonalCurve Q;           // Polygonal curve Q
+  CriticalValue criticalVal;  // Critical values object
+  DecisionProblem decision;   // Decision problem object
+
+  double fDistance;           // Computed F-distance
+
+  // Helper function to perform binary search on critical values
+  void computeFDistance();
+};
+
+```
+
+***
+
+### Member Variables
+
+#### `PolygonalCurve P`
+
+* **Description** &#x20;
+  * Copy of the first polygonal curve. Used as one of the two inputs for the Fréchet distance computation.
+
+#### `PolygonalCurve Q`
+
+* **Description** &#x20;
+  * Copy of the second polygonal curve.
+
+#### `CriticalValue criticalVal`
+
+* **Description** &#x20;
+  * Helper object that precomputes and stores all candidate critical distances between curves `P` and `Q`. &#x20;
+  * Provides a sorted, unique list of candidate thresholds via `getCriticalValues()`.
+
+#### `DecisionProblem decision`
+
+* **Description** &#x20;
+  * Decision oracle for the Fréchet distance.&#x20;
+  * For a given `epsilon`, `decision.setEpsilon(epsilon)` recomputes the free-space and reachability, and `doesMonotoneCurveExist()` answers whether the Fréchet distance is at most `epsilon`.
+
+#### `double fDistance`
+
+* **Description** &#x20;
+  * Final Fréchet distance computed by `computeFDistance()`. &#x20;
+    * A value `>= 0.0` is the smallest critical value found by the binary search for which the decision is `true`. &#x20;
+    * A value of `-1.0` is used as a sentinel to indicate that no valid distance was found (e.g., no critical values or inconsistent input).
+
+***
+
+### Constructor
+
+#### `FDistance(const PolygonalCurve& P, const PolygonalCurve& Q)`
+
+* **Input:**
+  * `P`: first polygonal curve.
+  * `Q`: second polygonal curve.
+* **Output:** &#x20;
+  * None (constructs the object and computes the result).
+* **Complexity:** &#x20;
+  * Time:&#x20;
+    * Dominated by:
+      * construction of `criticalVal` and its internal computations,
+      * a binary search over `N` critical values, each calling the decision oracle in (\Theta(p \cdot q)). &#x20;
+    * Overall: $$\Theta(p^2 (q-1) + q^2 (p-1)) + O(N \log N + \log N \cdot p \cdot q)$$.
+  * Space: $$O(N + p + q)$$, where `N` is the number of critical values.
+* **Description:** &#x20;
+  * Initializes all internal data structures:
+    * Stores copies of `P` and `Q`.
+    * Constructs `criticalVal(P, Q)`, which computes all critical values.
+    * Constructs `decision(P, Q, 0.0)` as a decision oracle with an initial threshold of `0.0`.
+    * Calls `computeFDistance()` to compute and store the final Fréchet distance in `fDistance`.
+* **Example:**
+  * ```cpp
+      PolygonalCurve P(pointsP);
+      PolygonalCurve Q(pointsQ);
+
+      FDistance fdist(P, Q);
+      std::cout << "Fréchet distance: " << fdist.getFDistance() << "\\n";
+    ```
+
+***
+
+### Member Functions (Public)
+
+#### `double getFDistance() const`
+
+* **Input:** &#x20;
+  * None.
+* **Output:** &#x20;
+  * The computed Fréchet distance between the two curves, or `-1.0` if no valid distance was found.
+* **Complexity:** $$O(1)$$
+* **Description:** &#x20;
+  * Returns the value stored in `fDistance`. &#x20;
+  * This method does **not** perform any additional computation; all work is done in the constructor and `computeFDistance()`.
+
+***
+
+### Member Functions (Private)
+
+#### `void computeFDistance()`
+
+* **Input:** &#x20;
+  * None (uses `criticalVal` and `decision`).
+* **Output:** &#x20;
+  * Updates `fDistance`.
+* **Complexity:**  $$O(\log N \cdot p \cdot q)$$ where:
+  * `N` is the number of critical values,
+  * `p = P.numPoints()`, `q = Q.numPoints()`.
+* **Description:** &#x20;
+  * Implements a binary search over the critical values:
+    * Retrieves the sorted list of critical values:
+      * ```cpp
+        const std::vector<double>& criticalValues = criticalVal.getCriticalValues();
+        ```
+      * If the list is empty, sets `fDistance = -1.0` and returns.
+    * Uses indices `left = 0`, `right = criticalValues.size() - 1` and `result = -1.0`:
+      * Computes `mid = left + (right - left) / 2`.
+      * Sets `double currentEpsilon = criticalValues[mid];`.
+      * Calls `decision.setEpsilon(currentEpsilon)` followed by `decision.doesMonotoneCurveExist()`.
+    * Update rules:
+      * If the decision is `true`, record `result = currentEpsilon` and continue searching in the **left half** (`right = mid - 1`) for a smaller feasible threshold.
+      * If the decision is `false`, search the **right half** (`left = mid + 1`) for a larger threshold.
+    * After the loop:
+      * If `result != -1.0`, assign `fDistance = result`.
+      * Otherwise, keep `fDistance = -1.0` as a sentinel.
+  * This method encapsulates the entire numeric search phase of the Alt–Godau-style algorithm.
+
+***
+
+### End-to-End Example
+
+```cpp
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+
+#include "polygonal_curve.h"
+#include "fdistance.h"
+
+#include <iostream>
+#include <vector>
+
+using Kernel  = CGAL::Exact_predicates_inexact_constructions_kernel;
+using Point_2 = Kernel::Point_2;
+
+int main() {
+  std::vector<Point_2> P_points = {
+      Point_2(0.0, 0.0),
+      Point_2(1.0, 0.5),
+      Point_2(2.0, 0.0)
+  };
+
+  std::vector<Point_2> Q_points = {
+      Point_2(0.0, 0.0),
+      Point_2(1.0, 1.0),
+      Point_2(2.0, 0.0)
+  };
+
+  PolygonalCurve P(P_points);
+  PolygonalCurve Q(Q_points);
+
+  FDistance fdist(P, Q);
+
+  double d = fdist.getFDistance();
+  if (d < 0.0) {
+    std::cout << "No valid Fréchet distance found (invalid input or empty curves)." << std::endl;
+  } else {
+    std::cout << "Fréchet distance between P and Q: " << d << std::endl;
   }
 
   return 0;

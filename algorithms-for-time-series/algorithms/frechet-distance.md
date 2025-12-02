@@ -72,7 +72,7 @@ class FDistance {
 
 No additional CGAL headers are included directly in `fdistance.h`; geometric operations are handled in dependent classes.
 
-#### Project
+#### Library
 
 * `"polygonal_curve.h"` – definition of `PolygonalCurve`, used for curves `P` and `Q`.
 * `"critical_value.h"` – definition of `CriticalValue`, used to generate critical distances.
