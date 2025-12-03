@@ -5,7 +5,8 @@
 ## Algorithms for Point set
 
 * [Introduction](algorithms-for-point-set/introduction.md)
-* [Data Structures](algorithms-for-point-set/data-structures.md)
+* [Data Structures](algorithms-for-point-set/data-structures/README.md)
+  * [Range Counting Oracle](algorithms-for-point-set/data-structures/range-counting-oracle.md)
 * [Algorithms](algorithms-for-point-set/algorithms.md)
 * [API](algorithms-for-point-set/api.md)
 
