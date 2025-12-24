@@ -14,9 +14,7 @@ Given a set of points
 
 * $$P = \{p_1, \dots, p_n\} \subset \mathbb{R}^2$$
 
-and an integer
-
-* $$k,$$
+and an integer $$k$$,
 
 the **k-median problem** asks for a set of centers
 
