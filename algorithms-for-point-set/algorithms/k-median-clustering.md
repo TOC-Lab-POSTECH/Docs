@@ -108,10 +108,10 @@ No external geometry libraries are required.
 ### Design Notes (Representative-Centric)
 
 * **Representative-based compression**
-  * The algorithm constructs a weighted representative set (R\_j) for a given cost guess (r\_j), replacing many original points by a single representative per sparse region.
+  * The algorithm constructs a weighted representative set $$R_j$$ for a given cost guess $$r_j$$, replacing many original points by a single representative per sparse region.
 * **Quadtree decomposition**
   * The input domain is covered by the smallest power-of-two square enclosing the bounding box.
-  * Space is recursively subdivided into quadtree cells of side length (2^i).
+  * Space is recursively subdivided into quadtree cells of side length $$2^i$$.
 * **Range-counting oracle**
   * Cell densities are computed using a `RangeTree`, avoiding explicit iteration over points.
   * This enables sublinear behavior in practice.
@@ -127,6 +127,24 @@ No external geometry libraries are required.
 ***
 
 ### Overall Structure
+
+{% tabs %}
+{% tab title="Data Structures" %}
+<table><thead><tr><th width="140">Name</th><th width="220">Type</th><th>Description</th></tr></thead><tbody><tr><td><code>QuadCell</code></td><td><code>struct</code></td><td>Quadtree cell (axis-aligned square). Stores the bottom-left corner <code>(x0, y0)</code>, side length <code>size</code>, and level <code>i</code> where <code>size = 2^i</code>.</td></tr><tr><td><code>RjConfig</code></td><td><code>struct</code></td><td>Configuration for constructing <code>R_j</code>: number of points <code>n</code>, number of centers <code>k</code>, approximation parameter <code>eps</code>, and cost guess <code>rj</code>.</td></tr><tr><td><code>K_j</code></td><td><code>std::vector&#x3C;QuadCell></code></td><td>Set of sparse cells collected during recursion (stored as a vector in the implementation).</td></tr><tr><td><code>R_j</code></td><td><code>std::vector&#x3C;Point></code></td><td>Weighted representative set produced from <code>K_j</code>. Each representative corresponds to one sparse cell with weight <code>w = |P ∩ cell|</code>.</td></tr></tbody></table>
+{% endtab %}
+
+{% tab title="Class" %}
+<table><thead><tr><th width="220">Name</th><th width="170">Role</th><th>Description</th></tr></thead><tbody><tr><td><code>RepresentativeSetBuilder</code></td><td>RCO-based builder</td><td>Constructs the representative set <code>R_j</code> from an input point set accessed through a <code>RangeTree</code> (range counting oracle), given a configuration <code>RjConfig</code>.</td></tr></tbody></table>
+{% endtab %}
+
+{% tab title="Functions" %}
+<table><thead><tr><th width="420">Name</th><th width="180">Input</th><th>Output</th></tr></thead><tbody><tr><td><code>RepresentativeSetBuilder(const RangeTree&#x26; tree, const RjConfig&#x26; cfg)</code></td><td><ul><li><code>tree</code>: range counting oracle on point set <code>P</code></li><li><code>cfg</code>: configuration (<code>n, k, eps, rj</code>)</li></ul></td><td><p>Initialized builder instance with:</p><ul><li>root quadtree cell</li><li>density threshold parameter <code>delta_kmed</code></li><li>limit on <code>|K_j|</code></li></ul></td></tr><tr><td><code>std::pair&#x3C;bool, std::vector&#x3C;Point>> build()</code></td><td>—</td><td><ul><li><code>true</code> and representative set <code>R_j</code> if construction succeeds</li><li><code>false</code> and empty vector if aborted (<code>|K_j|</code> too large)</li></ul></td></tr><tr><td><code>int countPointsInCell(const QuadCell&#x26; c) const</code></td><td><ul><li><code>c</code>: quadtree cell</li></ul></td><td><ul><li><code>n_c = |P ∩ c|</code></li></ul></td></tr><tr><td><code>void processCell(const QuadCell&#x26; c)</code></td><td><ul><li><code>c</code>: quadtree cell</li></ul></td><td><ul><li>Counts points <code>n_c = |P ∩ c|</code> using range counting</li><li>Classifies <code>c</code> as sparse or dense via threshold <code>T_{i,j} = δ_k-med · r_j / 2^i</code></li><li>Adds sparse cells to <code>K_j</code> and aborts if <code>|K_j|</code> exceeds the limit</li><li>Recursively subdivides dense cells into four children</li></ul></td></tr></tbody></table>
+{% endtab %}
+{% endtabs %}
+
+***
+
+
 
 ### Example Usage
 
