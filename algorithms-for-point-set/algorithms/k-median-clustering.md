@@ -24,9 +24,7 @@ the **k-median problem** asks for a set of centers
 
 minimizing the objective
 
-* $$$
-  = \sum_{p \in P} w(p) \cdot \min_{c \in C} \|p - c\|.$$
-  $$$
+* $$\sum_{p \in P} w(p) \cdot \min_{c \in C} |p - c|.$$
 
 Here $$w(p)$$ is a non-negative weight associated with point $$p$$. The problem is NP-hard even in the plane, motivating the use of approximation algorithms and heuristics.
 
@@ -54,7 +52,13 @@ Our implementation adapts this idea, and replaces oracle-based sampling with exp
 
 ***
 
-### Repository\*\*\*
+### Repository
+
+{% embed url="https://github.com/TOC-Lab-POSTECH/Approximation-k-median-clustering" %}
+
+***
+
+
 
 ### Class Synopsis
 
@@ -112,13 +116,13 @@ No external geometry libraries are required.
   * Cell densities are computed using a `RangeTree`, avoiding explicit iteration over points.
   * This enables sublinear behavior in practice.
 * **Density threshold**
-  * A cell at level (i) is classified as sparse if $$n_c < \frac{\delta_{\text{k-med}} \cdot r_j}{2^i},$$ where (\delta\_{\text{k-med\}} = \Theta!\left(\frac{k \log n}{\varepsilon^3}\right)).
+  * A cell at level (i) is classified as sparse if $$n_c < \frac{\delta_{\text{k-med}} \cdot r_j}{2^i},$$ where $$\delta_{\text{k-med}} = \Theta!\left(\frac{k \log n}{\varepsilon^3}\right)$$.
   * Sparse cells can be safely collapsed into weighted representatives.
 * **Abort mechanism**
-  * The construction aborts if the number of sparse cells exceeds $$O\!\left(\frac{k \log n}{\varepsilon^3}\right),$$ indicating that the current cost guess (r\_j) is too small.
+  * The construction aborts if the number of sparse cells exceeds $$O\!\left(\frac{k \log n}{\varepsilon^3}\right),$$ indicating that the current cost guess $$r_j$$ is too small.
 * **Practical complexity**
-  * Each cell is processed once and each density query costs (O(\log n)).
-  * In practice, runtime depends on the number of sparse cells rather than on (n), yielding sublinear behavior.
+  * Each cell is processed once and each density query costs $$O(\log n)$$.
+  * In practice, runtime depends on the number of sparse cells rather than on $$n$$, yielding sublinear behavior.
 
 ***
 
