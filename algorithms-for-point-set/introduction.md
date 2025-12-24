@@ -15,10 +15,11 @@ These problems arise in a wide range of applications, including trajectory analy
 
 #### Tools for algorithms
 
-* k-median++
-
 ### Algorithms
 
 #### Clustering
 
-* **k-median clustering**: A classical clustering problem that seeks to place (k) centers so as to minimize the sum of distances from each point to its nearest center. While k-median is NP-hard in general, it serves as a fundamental abstraction for facility location, summarization, and data reduction. In this work, we focus on the approximation algorithm of k-median problem, enabling efficient clustering even for very large point sets.
+* [**k-median clustering**](https://toc-lab-postech.gitbook.io/postech-toc-lab-sw-starlab/algorithms-for-point-set/algorithms/k-median-clustering): A classical clustering problem that seeks to place (k) centers so as to minimize the sum of distances from each point to its nearest center. While k-median is NP-hard in general, it serves as a fundamental abstraction for facility location, summarization, and data reduction. In this work, we focus on the approximation algorithm of k-median problem, enabling efficient clustering even for very large point sets.
+* [**k-median++**](https://toc-lab-postech.gitbook.io/postech-toc-lab-sw-starlab/algorithms-for-point-set/algorithms/k-median++)
+
+### [API](https://toc-lab-postech.gitbook.io/postech-toc-lab-sw-starlab/algorithms-for-point-set/api)
