@@ -7,7 +7,9 @@
 * [Introduction](algorithms-for-point-set/introduction.md)
 * [Data Structures](algorithms-for-point-set/data-structures/README.md)
   * [Range Counting Oracle](algorithms-for-point-set/data-structures/range-counting-oracle.md)
-* [Algorithms](algorithms-for-point-set/algorithms.md)
+* [Algorithms](algorithms-for-point-set/algorithms/README.md)
+  * [k-Median Clustering](algorithms-for-point-set/algorithms/k-median-clustering.md)
+  * [k-median++](algorithms-for-point-set/algorithms/k-median++.md)
 * [API](algorithms-for-point-set/api.md)
 
 ## Algorithms for Time series
