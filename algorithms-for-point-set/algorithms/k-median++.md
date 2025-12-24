@@ -200,6 +200,8 @@ Here $$n = |P|$$ is the number of points and $$|C|$$ denotes the size of a clust
 {% endtab %}
 {% endtabs %}
 
+***
+
 ### Usage in Our Framework
 
 Within our framework, k-median++ is used in two distinct roles:
