@@ -180,6 +180,8 @@ Overall, the total running time is $$O(T \cdot n \cdot k)$$, where $$T$$ is the 
 
 ***
 
+### Overall Structure
+
 {% tabs %}
 {% tab title="Data Structure" %}
 <table><thead><tr><th width="160">Name</th><th width="200">Type</th><th>Description</th></tr></thead><tbody><tr><td><code>Point</code></td><td><code>struct</code></td><td>Represents a weighted point in the plane, storing coordinates <code>(x, y)</code> and a non-negative weight <code>w</code>.</td></tr><tr><td><code>std::vector&#x3C;Point></code></td><td><code>container</code></td><td>Used to store input points, centers, clusters, and representative sets.</td></tr></tbody></table>
